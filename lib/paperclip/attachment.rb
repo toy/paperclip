@@ -82,6 +82,13 @@ module Paperclip
       instance_write(:file_size,       uploaded_file.size.to_i)
       instance_write(:updated_at,      Time.now)
 
+      if @instance.class.column_names.include?("#{name}_width") and 
+         @instance.class.column_names.include?("#{name}_height")
+        geometry = Geometry.from_file @queued_for_write[:original]
+        instance_write(:width, geometry.width)
+        instance_write(:height, geometry.height)
+      end
+
       @dirty = true
 
       post_process if valid?
@@ -165,6 +172,14 @@ module Paperclip
     def updated_at
       time = instance_read(:updated_at)
       time && time.to_i
+    end
+
+    def width
+      instance_read(:width)
+    end
+
+    def height
+      instance_read(:height)
     end
 
     # A hash of procs that are run during the interpolation of a path or url.
@@ -329,6 +344,8 @@ module Paperclip
       instance_write(:content_type, nil)
       instance_write(:file_size, nil)
       instance_write(:updated_at, nil)
+      instance_write(:width, nil)
+      instance_write(:height, nil)
     end
 
     def flush_errors #:nodoc:

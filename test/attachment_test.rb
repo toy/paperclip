@@ -429,6 +429,8 @@ class AttachmentTest < Test::Unit::TestCase
                 @attachment.expects(:instance_write).with(:content_type, nil)
                 @attachment.expects(:instance_write).with(:file_size, nil)
                 @attachment.expects(:instance_write).with(:updated_at, nil)
+                @attachment.expects(:instance_write).with(:width, nil)
+                @attachment.expects(:instance_write).with(:height, nil)
                 @attachment.assign nil
                 @attachment.save
               end
@@ -476,6 +478,16 @@ class AttachmentTest < Test::Unit::TestCase
     should "return the right value when sent #avatar_file_size" do
       @dummy.avatar = @file
       assert_equal @file.size, @dummy.avatar.size
+    end
+    
+    should "return nil when sent #width without avatar_width column" do
+      @dummy.avatar = @file
+      assert_nil @dummy.avatar.width
+    end
+
+    should "return nil when sent #height without avatar_height column" do
+      @dummy.avatar = @file
+      assert_nil @dummy.avatar.height
     end
 
     context "and avatar_updated_at column" do
@@ -535,6 +547,31 @@ class AttachmentTest < Test::Unit::TestCase
         @dummy.save
         @dummy = Dummy.find(@dummy.id)
         assert_equal @file.size, @dummy.avatar.size
+      end
+    end
+
+    context "and avatar_width/height columns" do
+      setup do
+        ActiveRecord::Base.connection.add_column :dummies, :avatar_width, :integer
+        ActiveRecord::Base.connection.add_column :dummies, :avatar_height, :integer
+        rebuild_class
+        @dummy = Dummy.new
+      end
+
+      should "not error when assigned an attachment" do
+        assert_nothing_raised { @dummy.avatar = @file }
+      end
+      
+      should "return the right value when sent #width" do
+        @dummy.avatar = @file
+        assert_nothing_raised{ @geo = Paperclip::Geometry.from_file(@file) }
+        assert_equal @geo.width, @dummy.avatar.width
+      end
+
+      should "return the right value when sent #height" do
+        @dummy.avatar = @file
+        assert_nothing_raised{ @geo = Paperclip::Geometry.from_file(@file) }
+        assert_equal @geo.height, @dummy.avatar.height
       end
     end
   end
