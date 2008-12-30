@@ -169,7 +169,12 @@ of the image with:
   @user.attachment.width
   @user.attachment.height
   
-If the columns are not present, these will return nil.
+  or
+  
+  @user.attachment.width(:style)
+  @user.attachment.height(:style)
+  
+If the columns are not present or the attachment is not an image, these will return nil.
 
 ==Contributing
 

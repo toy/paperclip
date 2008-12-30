@@ -41,6 +41,7 @@ module Paperclip
       @queued_for_delete = []
       @queued_for_write  = {}
       @errors            = {}
+      @dimensions        = {}
       @validation_errors = nil
       @dirty             = false
 
@@ -86,11 +87,20 @@ module Paperclip
       instance_write(:file_size,       uploaded_file.size.to_i)
       instance_write(:updated_at,      Time.now)
 
-      if @instance.class.column_names.include?("#{name}_width") and 
+      if image? and
+         @instance.class.column_names.include?("#{name}_width") and 
          @instance.class.column_names.include?("#{name}_height")
-        geometry = Geometry.from_file @queued_for_write[:original]
-        instance_write(:width, geometry.width)
-        instance_write(:height, geometry.height)
+
+         begin
+           geometry = Paperclip::Geometry.from_file(@queued_for_write[:original])
+           instance_write(:width, geometry.width)
+           instance_write(:height, geometry.height)
+         rescue NotIdentifiedByImageMagickError => e
+           log("Couldn't get dimensions for #{name}: #{e}")
+         end
+      else
+        instance_write(:width, nil)
+        instance_write(:height, nil)
       end
 
       @dirty = true
@@ -177,7 +187,7 @@ module Paperclip
     def content_type
       instance_read(:content_type)
     end
-    
+        
     # Returns the last modified time of the file as originally assigned, and 
     # lives in the <attachment>_updated_at attribute of the model.
     def updated_at
@@ -185,12 +195,18 @@ module Paperclip
       time && time.to_i
     end
 
-    def width
-      instance_read(:width)
+    # If <attachment> is an image and <attachment>_width attribute is present, returns the original width 
+    # of the image when no argument is specified or the calculated new width of the image when passed a 
+    # valid style. Returns nil otherwise
+    def width style = default_style
+      dimensions(style)[0]
     end
 
-    def height
-      instance_read(:height)
+    # If <attachment> is an image and <attachment>_height attribute is present, returns the original width 
+    # of the image when no argument is specified or the calculated new height of the image when passed a 
+    # valid style. Returns nil otherwise
+    def height style = default_style
+      dimensions(style)[1]
     end
 
     # A hash of procs that are run during the interpolation of a path or url.
@@ -245,6 +261,11 @@ module Paperclip
     # Returns true if a file has been assigned.
     def file?
       !original_filename.blank?
+    end
+
+    # Determines whether or not the attachment is an image based on the content_type
+    def image?
+      !content_type.nil? and !!content_type.match(%r{\Aimage/})
     end
 
     # Writes the attachment-specific attribute on the instance. For example,
@@ -355,6 +376,18 @@ module Paperclip
       end
     end
 
+    def dimensions style = default_style
+      return [nil,nil] unless image?
+      return @dimensions[style] unless @dimensions[style].nil?
+      w, h = instance_read(:width), instance_read(:height)
+      
+      if @styles[style].nil? or @styles[style][:geometry].nil?
+        @dimensions[style] = [w,h]
+      else
+        @dimensions[style] = Geometry.parse(@styles[style][:geometry]).new_dimensions_for(w, h)      
+      end
+    end
+
     def queue_existing_for_delete #:nodoc:
       return unless file?
       log("Queueing the existing files for #{name} for deletion.")
@@ -367,6 +400,7 @@ module Paperclip
       instance_write(:updated_at, nil)
       instance_write(:width, nil)
       instance_write(:height, nil)
+      @dimensions = {}
     end
 
     def flush_errors #:nodoc:
