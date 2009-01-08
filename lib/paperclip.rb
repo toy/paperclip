@@ -43,12 +43,14 @@ end
 # documentation for Paperclip::ClassMethods for more useful information.
 module Paperclip
 
-  VERSION = "2.2.0"
+  VERSION = "2.2.2"
 
   class << self
     # Provides configurability to Paperclip. There are a number of options available, such as:
     # * whiny_thumbnails: Will raise an error if Paperclip cannot process thumbnails of 
     #   an uploaded image. Defaults to true.
+    # * log: Logs progress to the Rails log. Uses ActiveRecord's logger, so honors
+    #   log levels, etc. Defaults to true.
     # * command_path: Defines the path at which to find the command line
     #   programs if they are not visible to Rails the system's search path. Defaults to 
     #   nil, which uses the first executable found in the user's search path.
@@ -57,7 +59,9 @@ module Paperclip
       @options ||= {
         :whiny_thumbnails  => true,
         :image_magick_path => nil,
-        :command_path      => nil
+        :command_path      => nil,
+        :log               => true,
+        :swallow_stderr    => true
       }
     end
 
@@ -81,7 +85,9 @@ module Paperclip
     # expected_outcodes, a PaperclipCommandLineError will be raised. Generally
     # a code of 0 is expected, but a list of codes may be passed if necessary.
     def run cmd, params = "", expected_outcodes = 0
-      output = `#{%Q[#{path_for_command(cmd)} #{params} 2>#{bit_bucket}].gsub(/\s+/, " ")}`
+      command = %Q<#{%Q[#{path_for_command(cmd)} #{params}].gsub(/\s+/, " ")}>
+      command = "#{command} 2>#{bit_bucket}" if Paperclip.options[:swallow_stderr]
+      output = `#{command}`
       unless [expected_outcodes].flatten.include?($?.exitstatus)
         raise PaperclipCommandLineError, "Error while running #{cmd}"
       end
@@ -252,7 +258,7 @@ module Paperclip
         valid_types = [options[:content_type]].flatten
         
         unless attachment.original_filename.blank?
-          unless options[:content_type].blank?
+          unless valid_types.blank?
             content_type = attachment.instance_read(:content_type)
             unless valid_types.any?{|t| t === content_type }
               options[:message] || "is not one of the allowed file types."
