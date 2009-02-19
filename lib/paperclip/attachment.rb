@@ -28,15 +28,17 @@ module Paperclip
       options = self.class.default_options.merge(options)
 
       @url               = options[:url]
+      @url               = @url.call(self) if @url.is_a?(Proc)
       @path              = options[:path]
+      @path              = @path.call(self) if @path.is_a?(Proc)
       @styles            = options[:styles]
+      @styles            = @styles.call(self) if @styles.is_a?(Proc)
       @default_url       = options[:default_url]
       @validations       = options[:validations]
       @default_style     = options[:default_style]
       @storage           = options[:storage]
       @whiny             = options[:whiny_thumbnails]
       @convert_options   = options[:convert_options] || {}
-      @background        = options[:background].nil? ? instance.respond_to?(:spawn) : options[:background]
       @processors        = options[:processors] || [:thumbnail]
       @options           = options
       @queued_for_delete = []
@@ -279,6 +281,7 @@ module Paperclip
     def instance_write(attr, value)
       setter = :"#{name}_#{attr}="
       responds = instance.respond_to?(setter)
+      self.instance_variable_set("@_#{setter.to_s.chop}", value)
       instance.send(setter, value) if responds || attr.to_s == "file_name"
     end
 
@@ -287,6 +290,8 @@ module Paperclip
     def instance_read(attr)
       getter = :"#{name}_#{attr}"
       responds = instance.respond_to?(getter)
+      cached = self.instance_variable_get("@_#{getter}")
+      return cached if cached
       instance.send(getter) if responds || attr.to_s == "file_name"
     end
 
@@ -367,11 +372,9 @@ module Paperclip
 
     def post_process #:nodoc:
       return if @queued_for_write[:original].nil?
-      background do
-        return if fire_events(:before)
-        post_process_styles
-        return if fire_events(:after)
-      end
+      return if fire_events(:before)
+      post_process_styles
+      return if fire_events(:after)
     end
 
     def fire_events(which)
@@ -386,23 +389,13 @@ module Paperclip
           raise RuntimeError.new("Style #{name} has no processors defined.") if args[:processors].blank?
           @queued_for_write[name] = args[:processors].inject(@queued_for_write[:original]) do |file, processor|
             log("Processing #{name} #{file} in the #{processor} processor.")
-            Paperclip.processor(processor).make(file, args)
+            Paperclip.processor(processor).make(file, args, self)
           end
         rescue PaperclipError => e
           log("An error was received while processing: #{e.inspect}")
           (@errors[:processing] ||= []) << e.message if @whiny
         end
       end
-    end
-
-    # When processing, if the spawn plugin is installed, processing can be done in
-    # a background fork or thread if desired.
-    def background(&blk)
-      # if instance.respond_to?(:spawn) && @background
-      #   instance.spawn(&blk)
-      # else
-        blk.call
-      # end
     end
 
     def callback which #:nodoc:
@@ -448,7 +441,7 @@ module Paperclip
 
     def flush_errors #:nodoc:
       @errors.each do |error, message|
-        instance.errors.add(name, message) if message
+        [message].flatten.each {|m| instance.errors.add(name, m) }
       end
     end
 
