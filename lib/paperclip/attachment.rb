@@ -97,8 +97,8 @@ module Paperclip
 
          begin
            geometry = Paperclip::Geometry.from_file(@queued_for_write[:original])
-           instance_write(:width, geometry.width)
-           instance_write(:height, geometry.height)
+           instance_write(:width, geometry.width.to_i)
+           instance_write(:height, geometry.height.to_i)
          rescue NotIdentifiedByImageMagickError => e
            log("Couldn't get dimensions for #{name}: #{e}")
          end
