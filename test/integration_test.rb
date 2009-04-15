@@ -96,7 +96,7 @@ class IntegrationTest < Test::Unit::TestCase
 
       context "and deleted" do
         setup do
-          @dummy.avatar = nil
+          @dummy.avatar.clear
           @dummy.save
         end
 
@@ -351,7 +351,7 @@ class IntegrationTest < Test::Unit::TestCase
         assert File.exists?(p)
       end
 
-      @dummy.avatar = nil
+      @dummy.avatar.clear
       assert_nil @dummy.avatar_file_name
       assert @dummy.valid?
       assert @dummy.save
@@ -374,7 +374,7 @@ class IntegrationTest < Test::Unit::TestCase
 
       saved_paths = [:thumb, :medium, :large, :original].collect{|s| @dummy.avatar.path(s) }
 
-      @d2.avatar = nil
+      @d2.avatar.clear
       assert @d2.save
 
       saved_paths.each do |p|
@@ -382,7 +382,7 @@ class IntegrationTest < Test::Unit::TestCase
       end
     end
 
-    should "know the difference between good files, bad files, not files, and nil" do
+    should "know the difference between good files, bad files, and not files" do
       expected = @dummy.avatar.to_file
       @dummy.avatar = "not a file"
       assert @dummy.valid?
@@ -391,8 +391,6 @@ class IntegrationTest < Test::Unit::TestCase
 
       @dummy.avatar = @bad_file
       assert ! @dummy.valid?
-      @dummy.avatar = nil
-      assert @dummy.valid?, @dummy.errors.inspect 
     end
     
     should "properly determine #image?" do
@@ -406,21 +404,19 @@ class IntegrationTest < Test::Unit::TestCase
       assert_equal false, @dummy.avatar.image?
     end
 
-    should "know the difference between good files, bad files, not files, and nil when validating" do
+    should "know the difference between good files, bad files, and not files when validating" do
       Dummy.validates_attachment_presence :avatar
       @d2 = Dummy.find(@dummy.id)
       @d2.avatar = @file
       assert   @d2.valid?, @d2.errors.full_messages.inspect 
       @d2.avatar = @bad_file
       assert ! @d2.valid?
-      @d2.avatar = nil
-      assert ! @d2.valid?
     end
 
     should "be able to reload without saving and not have the file disappear" do
       @dummy.avatar = @file
       assert @dummy.save
-      @dummy.avatar = nil
+      @dummy.avatar.clear
       assert_nil @dummy.avatar_file_name
       @dummy.reload
       assert_equal "5k.png", @dummy.avatar_file_name
@@ -442,16 +438,6 @@ class IntegrationTest < Test::Unit::TestCase
         @dummy.save
         assert_equal `identify -format "%wx%h" "#{@dummy.avatar.path(:original)}"`,
                      `identify -format "%wx%h" "#{@dummy2.avatar.path(:original)}"`
-      end
-      
-      should "work when assigned a nil file" do
-        @dummy2.avatar = nil
-        @dummy2.save
-
-        @dummy.avatar = @dummy2.avatar
-        @dummy.save
-        
-        assert !@dummy.avatar?
       end
     end    
 
@@ -550,7 +536,7 @@ class IntegrationTest < Test::Unit::TestCase
           assert key.exists?
         end
 
-        @dummy.avatar = nil
+        @dummy.avatar.clear
         assert_nil @dummy.avatar_file_name
         assert @dummy.valid?
         assert @dummy.save
@@ -573,7 +559,7 @@ class IntegrationTest < Test::Unit::TestCase
 
         saved_keys = [:thumb, :medium, :large, :original].collect{|s| @dummy.avatar.to_file(s) }
 
-        @d2.avatar = nil
+        @d2.avatar.clear
         assert @d2.save
 
         saved_keys.each do |key|
