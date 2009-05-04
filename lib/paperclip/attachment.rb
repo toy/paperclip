@@ -85,6 +85,13 @@ module Paperclip
       instance_write(:file_size,       uploaded_file.size.to_i)
       instance_write(:updated_at,      Time.now)
 
+      @dirty = true
+
+      post_process if valid?
+ 
+      # Reset the file size if the original file was reprocessed.
+      instance_write(:file_size, @queued_for_write[:original].size.to_i)
+
       if image? and
          @instance.class.column_names.include?("#{name}_width") and 
          @instance.class.column_names.include?("#{name}_height")
@@ -100,13 +107,6 @@ module Paperclip
         instance_write(:width, nil)
         instance_write(:height, nil)
       end
-
-      @dirty = true
-
-      post_process if valid?
- 
-      # Reset the file size if the original file was reprocessed.
-      instance_write(:file_size, @queued_for_write[:original].size.to_i)
     ensure
       uploaded_file.close if close_uploaded_file
       validate
