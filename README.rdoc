@@ -176,7 +176,7 @@ of the image with:
   @user.attachment.width(:style)
   @user.attachment.height(:style)
   
-If the columns are not present or the attachment is not an image, these will return nil.
+If the columns are not present or the attachment is not an image, then these will return nil.
 
 ==Contributing
 
