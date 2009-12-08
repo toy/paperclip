@@ -204,7 +204,7 @@ module Paperclip
     # lives in the <attachment>_updated_at attribute of the model.
     def updated_at
       time = instance_read(:updated_at)
-      time && time.to_i
+      time && time.to_f.to_i
     end
 
     # If <attachment> is an image and <attachment>_width attribute is present, returns the original width 
