@@ -27,19 +27,20 @@ In your migrations:
 
   class AddAvatarColumnsToUser < ActiveRecord::Migration
     def self.up
-      add_column :users, :avatar_file_name,    :string
-      add_column :users, :avatar_content_type, :string
-      add_column :users, :avatar_file_size,    :integer
-      add_column :users, :avatar_updated_at,   :datetime
+      change_table :users do |t|
+        t.paperclip :avatar
+      end
     end
 
     def self.down
-      remove_column :users, :avatar_file_name
-      remove_column :users, :avatar_content_type
-      remove_column :users, :avatar_file_size
-      remove_column :users, :avatar_updated_at
+      change_table :users do |t|
+        t.remove_paperclip :avatar
+      end
     end
   end
+
+`paperclip` method for `create_table` is also supported
+There is an option `:no_dimensions => true` if the you don't need dimensions or attachment is not an image at all
 
 In your edit and new views:
 

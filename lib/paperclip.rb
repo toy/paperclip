@@ -353,4 +353,6 @@ end
 if Object.const_defined?("ActiveRecord")
   ActiveRecord::Base.send(:include, Paperclip)
   File.send(:include, Paperclip::Upfile)
+  ActiveRecord::ConnectionAdapters::Table.send(:include, Paperclip::TableColumns)
+  ActiveRecord::ConnectionAdapters::TableDefinition.send(:include, Paperclip::TableColumns)
 end
