@@ -43,15 +43,15 @@ module Paperclip
       dst = Tempfile.new([@basename, @format].compact.join("."))
       dst.binmode
 
-      command = <<-end_command
-        #{ source_file_options }
-        "#{ File.expand_path(src.path) }[0]"
-        #{ transformation_command }
-        "#{ File.expand_path(dst.path) }"
-      end_command
+      command = [
+        source_file_options,
+        "#{ShellEscape.word(File.expand_path(src.path))}[0]",
+        transformation_command,
+        ShellEscape.word(File.expand_path(dst.path)),
+      ].join(' ')
 
       begin
-        success = Paperclip.run("convert", command.gsub(/\s+/, " "))
+        success = Paperclip.run("convert", command)
       rescue PaperclipCommandLineError
         raise PaperclipError, "There was an error processing the thumbnail for #{@basename}" if @whiny
       end
