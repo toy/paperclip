@@ -70,6 +70,11 @@ module Paperclip
       attachment.instance.class.to_s.underscore.pluralize
     end
 
+    def table attachment = nil, style = nil
+      return super() if attachment.nil? && style.nil?
+      attachment.instance.class.table_name
+    end
+
     # Returns the basename of the file. e.g. "file" for "file.jpg"
     def basename attachment, style
       attachment.original_filename.gsub(/#{File.extname(attachment.original_filename)}$/, "")
