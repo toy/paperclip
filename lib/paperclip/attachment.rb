@@ -4,7 +4,7 @@ module Paperclip
   # when the model saves, deletes when the model is destroyed, and processes
   # the file upon assignment.
   class Attachment
-    
+
     def self.default_options
       @default_options ||= {
         :url           => "/system/:table/:attachment/:id/:style/:filename",
@@ -58,7 +58,7 @@ module Paperclip
     # errors, assigns attributes, processes the file, and runs validations. It
     # also queues up the previous file for deletion, to be flushed away on
     # #save of its host.  In addition to form uploads, you can also assign
-    # another Paperclip attachment: 
+    # another Paperclip attachment:
     #   new_user.avatar = old_user.avatar
     # If the file that is assigned is not valid, the processing (i.e.
     # thumbnailing, etc) will NOT be run.
@@ -86,21 +86,21 @@ module Paperclip
       @dirty = true
 
       post_process if valid?
- 
+
       # Reset the file size if the original file was reprocessed.
       instance_write(:file_size, @queued_for_write[:original].size.to_i)
 
       if image? and
-         @instance.class.column_names.include?("#{name}_width") and 
-         @instance.class.column_names.include?("#{name}_height")
+          @instance.class.column_names.include?("#{name}_width") and
+          @instance.class.column_names.include?("#{name}_height")
 
-         begin
-           geometry = Paperclip::Geometry.from_file(@queued_for_write[:original])
-           instance_write(:width, geometry.width.to_i)
-           instance_write(:height, geometry.height.to_i)
-         rescue NotIdentifiedByImageMagickError => e
-           log("Couldn't get dimensions for #{name}: #{e}")
-         end
+          begin
+            geometry = Paperclip::Geometry.from_file(@queued_for_write[:original])
+            instance_write(:width, geometry.width.to_i)
+            instance_write(:height, geometry.height.to_i)
+          rescue NotIdentifiedByImageMagickError => e
+            log("Couldn't get dimensions for #{name}: #{e}")
+          end
       else
         instance_write(:width, nil)
         instance_write(:height, nil)
@@ -199,23 +199,23 @@ module Paperclip
     def content_type
       instance_read(:content_type)
     end
-        
-    # Returns the last modified time of the file as originally assigned, and 
+
+    # Returns the last modified time of the file as originally assigned, and
     # lives in the <attachment>_updated_at attribute of the model.
     def updated_at
       time = instance_read(:updated_at)
       time && time.to_f.to_i
     end
 
-    # If <attachment> is an image and <attachment>_width attribute is present, returns the original width 
-    # of the image when no argument is specified or the calculated new width of the image when passed a 
+    # If <attachment> is an image and <attachment>_width attribute is present, returns the original width
+    # of the image when no argument is specified or the calculated new width of the image when passed a
     # valid style. Returns nil otherwise
     def width style = default_style
       dimensions(style)[0]
     end
 
-    # If <attachment> is an image and <attachment>_height attribute is present, returns the original width 
-    # of the image when no argument is specified or the calculated new height of the image when passed a 
+    # If <attachment> is an image and <attachment>_height attribute is present, returns the original width
+    # of the image when no argument is specified or the calculated new height of the image when passed a
     # valid style. Returns nil otherwise
     def height style = default_style
       dimensions(style)[1]
@@ -228,8 +228,8 @@ module Paperclip
     # or extend the Paperclip::Interpolations module directly.
     def self.interpolations
       warn('[DEPRECATION] Paperclip::Attachment.interpolations is deprecated ' +
-           'and will be removed from future versions. ' +
-           'Use Paperclip.interpolates instead')
+            'and will be removed from future versions. ' +
+            'Use Paperclip.interpolates instead')
       Paperclip::Interpolations
     end
 
@@ -254,7 +254,7 @@ module Paperclip
         true
       end
     end
-    
+
     # Returns true if a file has been assigned.
     def file?
       !original_filename.blank?
@@ -407,7 +407,7 @@ module Paperclip
     end
 
     def callback which #:nodoc:
-      instance.run_callbacks(which, @queued_for_write){|result, obj| result == false }
+      instance.run_callbacks(which, @queued_for_write)
     end
 
     def post_process_styles #:nodoc:
@@ -432,11 +432,11 @@ module Paperclip
       return [nil,nil] unless image?
       return @dimensions[style] unless @dimensions[style].nil?
       w, h = instance_read(:width), instance_read(:height)
-      
+
       if @styles[style].nil? or @styles[style][:geometry].nil?
         @dimensions[style] = [w,h]
       else
-        @dimensions[style] = Geometry.parse(@styles[style][:geometry]).new_dimensions_for(w, h)      
+        @dimensions[style] = Geometry.parse(@styles[style][:geometry]).new_dimensions_for(w, h)
       end
     end
 
@@ -462,4 +462,3 @@ module Paperclip
 
   end
 end
-
